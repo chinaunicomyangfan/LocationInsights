@@ -1,31 +1,43 @@
 openapi: 3.0.3
 info:
-  title: Device Visit Location
+  title: Most Frequent Location
   description: |
-    The Device Visit Location API provides customers with the ability to query the visit locations of a device during a certain time period.
+    The Most Frequent Location API provides customers with the ability to verify the frequency of a device's location within a specific geographic area.
 
     # Introduction
 
-    This API can return the visited location of a device at a certain time, and the visited location is returned as a list of geoCode objects.
-    This API can be used in the following scenarios.\
-    **Anti fraud**: for some scenarios involving high-risk financial operations (such as cross-border transfers, large investments, etc.), by monitoring changes in the location visited by mobile phone numbers, potential fraudulent behavior can be detected in advance. For example, when a user usually only operates in a few provinces within the country, but suddenly has access records from overseas or unfamiliar high-risk provinces, and there are also signs of abnormal fund flow, preventive measures can be taken quickly.\
-    **Identity verification**: In the financial field, when users perform high-risk operations such as large transfers or changing important account information, in addition to conventional verification methods such as passwords and verification codes, identity verification can also be carried out by combining their phone number with the province they recently visited.\
-    **Remote abnormal operation detection**: For the account security management of e-commerce platforms, when users perform login, password modification, payment and other operations, they can use this api to detect whether there are abnormal operations in remote locations.
+    This API verifies if a device is present most of the time in a certain location. This location insight is useful as an approach to the residence location of the user.
+
+    This API can be used in anti-fraud cases where a service provider needs further evidence about the reported place of residence of the customer. Also, for service provision or personalization tasks when the service provider needs to manage their offer depending on the habits of the customer.
+
+    Such use cases are transversal to different sectors such as:
+
+      - Financial institutions: to mitigate risks about identity fraud, helping in their compliance with AML/KYC regulation.
+      - Insurance companies: to assess risks and prevent fraudulent claims.
+      - E-commerce and retail: to ensure accurate shipping and delivery, fraud prevention and targeted marketing.
+      - Digital Content Delivery companies: to verify service provisioning and billing, and to comply with regulation.
+      - Utilities: to verify service provisioning and billing, and to prevent service theft.
+      - Real estate: to screen potential tenants and ensure that lease agreements are in compliance with local laws.
+
     # Relevant terms and definitions
-    * **Device**: A device refers to any physical entity that can connect to a network and participate in network communication.
-      At least one identifier for the device (user equipment) out of four options: IPv4 address, IPv6 address, Phone number, or Network Access Identifier (not supported for this API version) assigned by the mobile network operator for the device.
-    * **geoCode**: An object with the following attributes:
-      - **countryCode**: The code of the country.Following the `ISO 3166 ALPHA-2` standard.
-      - **codeType**: The type of code, such as "PostlCode".
-      - **codeValue**: The actual value of the code.
 
-    # API Functionality
-    Once the API Consumer provides the device infomation and specifies the time window, the API queries the relevant data. The data is retrieved from the stored information within the selected time window. The result is returned as a list of geoCode objects representing the visited locations.
+    * **Device**: Any physical entity that can connect to a network and participate in network communication.
 
-    ## Detailed Explanation of GeoCode Object
-    **CountyCode**: This is a string type field used to specify the country code where the location is located. Following the `ISO 3166 ALPHA-2` standard, for example, "CN" represents China, "US" represents the United States, etc. On a global scale, this code ensures accurate differentiation of different countries and is an important foundational information for positioning, helping to quickly filter and identify location data for specific countries in cross-border business or data analysis.\
-    **codeType**： String type, used to specify the geographic encoding type used, with a fixed value of `PostlCode` in the current version. This field is designed to facilitate future expansion for different geographic coding systems, allowing capability providers to select the appropriate coding type for return based on actual situations.\
-    **codeValue**： String type, representing the specific encoding value of the corresponding codeType. For example, when codeType is `Postal Code`, codeValue may be a postal code similar to "100000". It, together with the countryCode and codeType, forms a complete location identifier that accurately points to a specific geographic area.
+    * **Geographical reference**: Using coordinates or a reference code, the geographical surface where a device can be physically located is specified.
+
+    * **Verification**: The process triggered on the API server to calculate the frequency of time a device is at a given location.
+
+    # API functionality
+
+    The API allows customers to verify how often a device is in a specific location. The location can be specified using a geographical reference of type:
+      - `COVERAGE_ZONE`: It is specified by latitude and longitude coordinates. The coverage area is generated by one or more antennas closest to the specified coordinates, determining the device's connection to these antennas.
+      - `POSTAL_CODE`: A zip code or postal code that delimits a geographic area.
+
+    The operation returns a score representing how frequently the device was connected to antennas whose coverage cover the requested area in certain time slots. The range of score values is between "0" and "100", where higher scores indicate a more frequent presence in the location.
+
+    The `score` value maps to the frequency as follows:
+      - `score = 0`: The device has never been in the specified location.
+      - `score = 100`: The device is almost always in the specified location.
 
     # Identifying a device from the access token
 
@@ -51,77 +63,118 @@ info:
 
     - For scenarios which do not have a single device identifier associated to the token during the authentication flow, e.g. 2-legged access tokens, the `device` object MUST be provided in the API request. This ensures that the device identification is explicit and valid for each API call made with these tokens.
 
+    # Further info and support
+
+    (FAQs will be added in a later version of the documentation)
   termsOfService: http://swagger.io/terms/
+  contact:
+    email: project-email@sample.com
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
-  version: wip
-  x-camara-commonalities: 0.5
+  version: 0.1.0-rc.1
 externalDocs:
   description: Product documentation at CAMARA
   url: https://github.com/camaraproject/
 servers:
-  - url: "{apiRoot}/device-visit-location/vwip"
+  - url: "{apiRoot}/most-frequent-location/v0.1rc1"
     variables:
       apiRoot:
         default: http://localhost:9091
         description: API root
 tags:
-  - name: DeviceVisitLocation
-    description: Operations to retrieve device visit location information.
+  - name: Frequent location verification
+    description: Verification of the most frequent location of a device
 paths:
-  /retrieve:
+  /verify:
     post:
       security:
         - openId:
-            - device-visit-location:retrieve
+            - most-frequent-location:verify
       tags:
-        - DeviceVisitLocation
-      summary: Retrieves device visit location information
-      description: >-
-        Retrieves the latest visit locations of a device within a given time window.
-      operationId: retrieveDeviceVisitLocation
+        - Frequent location verification
+      summary: Verify the most frequent location of a device
+      description: |-
+        Verify how often a device is within a requested geographic area location. The location can be defined by a postal code or a latitude and longitude coordinates. The operation returns a score representing how frequently the device was connected to antennas whose coverage covers the requested area.
+      operationId: verifyFrequentLocation
       parameters:
         - $ref: '#/components/parameters/x-correlator'
       requestBody:
+        description: Request body with a device as identifier and geographical reference for location
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RetrieveVisitLocationRequest'
-            example:
-              device:
-                phoneNumber: '+123456789'
-              startTime: '2024-04-23T14:44:18.165Z'
-              endTime: '2024-04-30T14:44:18.165Z'
+              $ref: '#/components/schemas/VerifyFrequentLocationRequest'
+            examples:
+              INPUT_PHONE_NUMBER_POSTAL_CODE:
+                summary: Phone number and postal code
+                description: Verify how often the device, identified by a phone number, has been in a location delimited by a postal code
+                value:
+                  device:
+                    phoneNumber: '+123456789'
+                  geoReference:
+                    type: POSTAL_CODE
+                    postalCode: '12345'
+              INPUT_PHONE_NUMBER_COVERAGE_ZONE:
+                summary: Phone number and coverage zone
+                description: Verify how often the device, identified by a phone number, has been in a location delimited by a coverage zone specified by latitude and longitude coordinates
+                value:
+                  device:
+                    phoneNumber: '+123456789'
+                  geoReference:
+                    type: COVERAGE_ZONE
+                    latitude: 50.735851
+                    longitude: 7.10066
+              INPUT_IP_ADDRESS_V4_POSTAL_CODE:
+                summary: IPv4 address and postal code
+                description: Verify how often the device, identified by an IPv4 address, has been in a location delimited by a postal code
+                value:
+                  device:
+                    ipv4Address:
+                      publicAddress: '123.234.1.2'
+                      publicPort: 1234
+                  geoReference:
+                    type: POSTAL_CODE
+                    postalCode: '12345'
+              INPUT_IP_ADDRESS_V4_COVERAGE_ZONE:
+                summary: IPv4 address and coverage zone
+                description: Verify how often the device, identified by an IPv4 address, has been in a location delimited by a coverage zone specified by latitude and longitude coordinates
+                value:
+                  device:
+                    ipv4Address:
+                      publicAddress: '123.234.1.2'
+                      publicPort: 1234
+                  geoReference:
+                    type: COVERAGE_ZONE
+                    latitude: 50.735851
+                    longitude: 7.10066
       responses:
         '200':
-          description: Device Visit Location query result
+          description: Most frequent location verification result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RetrieveVisitLocationResponse'
-              example:
-                geoCodeList:
-                  - countryCode: "CN"
-                    codeType: "PostalCode"
-                    codeValue: "110000"
-                  - countryCode: "CN"
-                    codeType: "PostalCode"
-                    codeValue: "310000"
+                $ref: '#/components/schemas/VerifyFrequentLocationResponse'
+              examples:
+                HIGH_SCORE:
+                  summary: High score with detail
+                  description: The device has been at the requested location with high frequency for most of the time.
+                  value:
+                    score: 86
           headers:
             x-correlator:
               $ref: '#/components/headers/x-correlator'
         '400':
-          $ref: '#/components/responses/RetrieveVisitLocationBadRequest400'
+          $ref: '#/components/responses/VerifyFrequentLocationBadRequest400'
         '401':
           $ref: '#/components/responses/Generic401'
         '403':
-          $ref: '#/components/responses/Generic403'
+          $ref: '#/components/responses/VerifyFrequentLocationPermissionDenied403'
         '404':
-          $ref: '#/components/responses/RetrieveVisitLocationNotFound404'
+          $ref: '#/components/responses/VerifyFrequentLocationNotFound404'
         '422':
-          $ref: '#/components/responses/Generic422'
+          $ref: '#/components/responses/VerifyFrequentLocationUnprocessableEntity422'
         '500':
           $ref: '#/components/responses/Generic500'
         '503':
@@ -133,65 +186,25 @@ components:
     openId:
       type: openIdConnect
       openIdConnectUrl: https://example.com/.well-known/openid-configuration
-  parameters:
-    x-correlator:
-      name: x-correlator
-      in: header
-      description: Correlation id for the different services
-      schema:
-        type: string
-        pattern: ^[a-zA-Z0-9-]{1,55}$
-  headers:
-    x-correlator:
-      description: Correlation id for the different services
-      schema:
-        type: string
-        pattern: ^[a-zA-Z0-9-]{1,55}$
   schemas:
-    RetrieveVisitLocationRequest:
+    VerifyFrequentLocationRequest:
       type: object
-      description: Request with a device as identifier,starttime and endtime
+      description: Request with a device as identifier and geographical reference for location
       required:
-        - startTime
-        - endTime
+        - geoReference
       properties:
         device:
           $ref: '#/components/schemas/Device'
-        startTime:
-          type: string
-          format: date-time
-          description: Start date time of the time window. If not provided, the default is the past seven days from the request time. It must follow [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) and must have time zone. Recommended format is yyyy-MM-dd'T'HH:mm:ss.SSSZ.
-        endTime:
-          type: string
-          format: date-time
-          description: End date time of the time window. If not provided, the default is the past seven days from the request time. It must follow [RFC 3339](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6) and must have time zone. Recommended format is yyyy-MM-dd'T'HH:mm:ss.SSSZ.
-    RetrieveVisitLocationResponse:
+        geoReference:
+          $ref: '#/components/schemas/GeoReference'
+    VerifyFrequentLocationResponse:
       type: object
-      description: Contains the list of geoCode objects representing the visited locations.
+      description: Calculated Score Response
       required:
-        - geoCodeList
+        - score
       properties:
-        geoCodeList:
-          type: array
-          items:
-            $ref: '#/components/schemas/geoCode'
-          minItems: 1
-    geoCode:
-      type: object
-      properties:
-        countryCode:
-          type: string
-          description: Code for the country where the location is is located. Following the `ISO 3166 ALPHA-2` standard, for example, "CN" represents China, "US" represents the United States, etc.
-        codeType:
-          type: string
-          description: The type of code.This field is used to specify the geographic encoding type used, with a fixed value of `PostlCode` in the current version.
-        codeValue:
-          type: string
-          description: The actual value of the code,representing the specific encoding value of the corresponding codeType.
-      required:
-        - countryCode
-        - codeType
-        - codeValue
+        score:
+          $ref: '#/components/schemas/Score'
     Device:
       description: |-
         End-user equipment able to connect to a mobile network. Examples of devices include smartphones or IoT sensors/actuators.
@@ -270,6 +283,82 @@ components:
       type: string
       format: ipv6
       example: 2001:db8:85a3:8d3:1319:8a2e:370:7344
+    GeoReference:
+      description: |-
+        Specific Geographical reference. It can be defined in different ways, such as by a postal code or coverage zone specified by latitude and longitude coordinates.
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/GeoReferenceType'
+      required:
+        - type
+      discriminator:
+        propertyName: type
+        mapping:
+          COVERAGE_ZONE: '#/components/schemas/CoverageZone'
+          POSTAL_CODE: '#/components/schemas/PostalCode'
+    GeoReferenceType:
+      type: string
+      description: |-
+        Type of this geographical reference.
+        - `COVERAGE_ZONE`: It is specified by latitude and longitude coordinates. The coverage area is generated by one or more antennas closest to the specified coordinates, determining the device's connection to these antennas.
+        - `POSTAL_CODE`: A zip code or postal code that delimits a geographic area.
+      enum:
+        - COVERAGE_ZONE
+        - POSTAL_CODE
+    CoverageZone:
+      description: Coverage zone specified by latitude and longitude coordinates
+      allOf:
+        - $ref: '#/components/schemas/GeoReference'
+        - type: object
+          properties:
+            latitude:
+              $ref: '#/components/schemas/Latitude'
+            longitude:
+              $ref: '#/components/schemas/Longitude'
+          example:
+            latitude: 50.735851
+            longitude: 7.10066
+          required:
+            - latitude
+            - longitude
+      example:
+        type: COVERAGE_ZONE
+        latitude: 50.735851
+        longitude: 7.10066
+    Latitude:
+      description: Latitude component of a location
+      type: number
+      format: double
+      minimum: -90
+      maximum: 90
+      example: 50.735851
+    Longitude:
+      description: Longitude component of location
+      type: number
+      format: double
+      minimum: -180
+      maximum: 180
+      example: 7.10066
+    PostalCode:
+      description: Area associated to an administrative or geographical code
+      allOf:
+        - $ref: '#/components/schemas/GeoReference'
+        - type: object
+          properties:
+            postalCode:
+              type: string
+              description: Zip code or postal code.
+          required:
+            - postalCode
+    Score:
+      type: integer
+      description: |-
+        The value is a summary metric derived from analysis of the device's connections to antennas covering the requested area across all time slots.
+        The range of score values is between "0" and "100", where higher scores indicate a more frequent presence in the location.
+      minimum: 0
+      maximum: 100
+      example: 86
     ErrorInfo:
       type: object
       description: Error information
@@ -288,29 +377,20 @@ components:
           type: string
           description: Friendly Code to describe the error
   responses:
-    RetrieveVisitLocationBadRequest400:
+    VerifyFrequentLocationBadRequest400:
       description: |-
         Bad Request.
         In addition to regular scenario of `INVALID_ARGUMENT`, other scenarios may exist:
 
-        - Indicated endTime is earlier than the startTime ("code": "DEVICE_VISIT_LOCATION.INVALID_END_DATE","message": "Indicated endTime is earlier than the startTime.")
+        - Out of Range. Specific Syntax Exception used when a given field has a pre-defined range or a invalid filter criteria combination is requested ("code": "OUT_OF_RANGE","message": "Client specified an invalid range.")
+        - The postal code value does not exist or is invalid ("code": "MOST_FREQUENT_LOCATION.POSTAL_CODE_NOT_VALID","message": "Requested postal code value does not exist or is invalid.").
       headers:
         x-correlator:
           $ref: '#/components/headers/x-correlator'
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 400
-                  code:
-                    enum:
-                      - INVALID_ARGUMENT
-                      - DEVICE_VISIT_LOCATION.INVALID_END_DATE
+            $ref: '#/components/schemas/ErrorInfo'
           examples:
             GENERIC_400_INVALID_ARGUMENT:
               description: Invalid Argument. Generic Syntax Exception
@@ -318,11 +398,18 @@ components:
                 status: 400
                 code: INVALID_ARGUMENT
                 message: Client specified an invalid argument, request body or query param.
-            GENERIC_400_INVALID_END_DATE:
+            GENERIC_400_OUT_OF_RANGE:
+              description: Out of Range. Specific Syntax Exception used when a given field has a pre-defined range or a invalid filter criteria combination is requested
               value:
                 status: 400
-                code: DEVICE_VISIT_LOCATION.INVALID_END_DATE
-                message: "Indicated endTime is earlier than the startTime."
+                code: OUT_OF_RANGE
+                message: Client specified an invalid range.
+            POSTAL_CODE_NOT_VALID:
+              description: The postal code value does not exist or is invalid
+              value:
+                status: 400
+                code: MOST_FREQUENT_LOCATION.POSTAL_CODE_NOT_VALID
+                message: Requested postal code value does not exist or is invalid.
     Generic401:
       description: Unauthorized
       headers:
@@ -331,17 +418,7 @@ components:
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 401
-                  code:
-                    enum:
-                      - UNAUTHENTICATED
-                      - AUTHENTICATION_REQUIRED
+            $ref: "#/components/schemas/ErrorInfo"
           examples:
             GENERIC_401_UNAUTHENTICATED:
               description: Request cannot be authenticated
@@ -355,25 +432,19 @@ components:
                 status: 401
                 code: AUTHENTICATION_REQUIRED
                 message: New authentication is required.
-    Generic403:
-      description: Forbidden
+    VerifyFrequentLocationPermissionDenied403:
+      description: |-
+        Forbidden.
+        In addition to regular scenario of `PERMISSION_DENIED`, another scenarios may exist:
+
+        - Phone number cannot be deducted from access token context.("code": "INVALID_TOKEN_CONTEXT","message": "Phone number is not consistent with access token.")
       headers:
         x-correlator:
-          $ref: "#/components/headers/x-correlator"
+          $ref: '#/components/headers/x-correlator'
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 403
-                  code:
-                    enum:
-                      - PERMISSION_DENIED
-                      - INVALID_TOKEN_CONTEXT
+            $ref: '#/components/schemas/ErrorInfo'
           examples:
             GENERIC_403_PERMISSION_DENIED:
               description: Permission denied. OAuth2 token access does not have the required scope or when the user fails operational security
@@ -386,32 +457,21 @@ components:
               value:
                 status: 403
                 code: INVALID_TOKEN_CONTEXT
-                message: "{{field}} is not consistent with access token."
-    RetrieveVisitLocationNotFound404:
+                message: Phone number is not consistent with access token.
+    VerifyFrequentLocationNotFound404:
       description: |-
         Not found.
         In addition to regular scenario of `NOT_FOUND`, other scenarios may exist:
 
         - Device identifier not found ("code": "DEVICE_NOT_FOUND","message": "Device identifier not found.").
-        - Unable to find the visit location information of the device within the given time window, it may be due to the device being offline ("code": "DEVICE_VISIT_LOCATION.DATA_NOT_FOUND","message": "Unable to find the visit location information of the device within the given time window").
+        - There is not enough information to calculate the score ("code": "MOST_FREQUENT_LOCATION.INFORMATION_NOT_AVAILABLE","message": "Requested information is not available").
       headers:
         x-correlator:
           $ref: '#/components/headers/x-correlator'
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 404
-                  code:
-                    enum:
-                      - NOT_FOUND
-                      - IDENTIFIER_NOT_FOUND
-                      - DEVICE_VISIT_LOCATION.DATA_NOT_FOUND
+            $ref: '#/components/schemas/ErrorInfo'
           examples:
             GENERIC_404_NOT_FOUND:
               description: Resource is not found
@@ -425,172 +485,52 @@ components:
                 status: 404
                 code: DEVICE_NOT_FOUND
                 message: Device identifier not found.
-            DATA_NOT_FOUND:
-              description: Unable to find the visit location information of the device within the given time window
+            INFORMATION_NOT_AVAILABLE:
+              description: There is not enough information to calculate the score
               value:
                 status: 404
-                code: DEVICE_VISIT_LOCATION.DATA_NOT_FOUND
-                message: Unable to find the visit location information of the device within the given time window.
-    Generic405:
-      description: Method Not Allowed
+                code: MOST_FREQUENT_LOCATION.INFORMATION_NOT_AVAILABLE
+                message: Requested information is not available.
+    VerifyFrequentLocationUnprocessableEntity422:
+      description: |-
+        Unprocessable Content.
+
+        - Inconsistency between device identifiers not pointing to the same device ("code": "DEVICE_IDENTIFIERS_MISMATCH","message": "Provided device identifiers are not consistent.").
+        - Service is not available for the provided device ("code": "DEVICE_NOT_APPLICABLE","message": "The service is not available for the provided device.").
+        - None of the provided device identifiers are supported by the implementation ("code": "UNSUPPORTED_DEVICE_IDENTIFIERS","message": "Supported device identifiers are: ...").
+        - The device identifier is not included in the request and the device information cannot be derived from the 3-legged access token ("code": "UNIDENTIFIABLE_DEVICE","message": "The device cannot be identified.").
       headers:
         x-correlator:
-          $ref: "#/components/headers/x-correlator"
+          $ref: '#/components/headers/x-correlator'
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 405
-                  code:
-                    enum:
-                      - METHOD_NOT_ALLOWED
+            $ref: '#/components/schemas/ErrorInfo'
           examples:
-            GENERIC_405_METHOD_NOT_ALLOWED:
-              description: Invalid HTTP verb used with a given endpoint
-              value:
-                status: 405
-                code: METHOD_NOT_ALLOWED
-                message: The requested method is not allowed/supported on the target resource.
-    Generic406:
-      description: Not Acceptable
-      headers:
-        x-correlator:
-          $ref: "#/components/headers/x-correlator"
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 406
-                  code:
-                    enum:
-                      - NOT_ACCEPTABLE
-          examples:
-            GENERIC_406_NOT_ACCEPTABLE:
-              description: API Server does not accept the media type (`Accept-*` header) indicated by API client
-              value:
-                status: 406
-                code: NOT_ACCEPTABLE
-                message: The server cannot produce a response matching the content requested by the client through `Accept-*` headers.
-    Generic412:
-      description: Failed precondition
-      headers:
-        x-correlator:
-          $ref: "#/components/headers/x-correlator"
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 412
-                  code:
-                    enum:
-                      - FAILED_PRECONDITION
-          examples:
-            GENERIC_412_FAILED_PRECONDITION:
-              description: Indication by the API Server that the request cannot be processed in current system state
-              value:
-                status: 412
-                code: FAILED_PRECONDITION
-                message: Request cannot be executed in the current system state.
-    Generic422:
-      description: Unprocessable Content
-      headers:
-        x-correlator:
-          $ref: "#/components/headers/x-correlator"
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 422
-                  code:
-                    enum:
-                      - IDENTIFIER_MISMATCH
-                      - SERVICE_NOT_APPLICABLE
-                      - MISSING_IDENTIFIER
-                      - UNSUPPORTED_IDENTIFIER
-                      - UNNECESSARY_IDENTIFIER
-          examples:
-            GENERIC_422_IDENTIFIER_MISMATCH:
-              description: Inconsistency between identifiers not pointing to the same device
+            GENERIC_422_DEVICE_IDENTIFIERS_MISMATCH:
+              description: Inconsistency between device identifiers not pointing to the same device
               value:
                 status: 422
-                code: IDENTIFIER_MISMATCH
-                message: Provided identifiers are not consistent.
-            GENERIC_422_SERVICE_NOT_APPLICABLE:
-              description: Service not applicable for the provided identifier
+                code: DEVICE_IDENTIFIERS_MISMATCH
+                message: "Provided device identifiers are not consistent"
+            GENERIC_422_DEVICE_NOT_APPLICABLE:
+              description: Service is not available for the provided device
               value:
                 status: 422
-                code: SERVICE_NOT_APPLICABLE
-                message: The service is not available for the provided identifier.
-            GENERIC_422_MISSING_IDENTIFIER:
-              description: An identifier is not included in the request and the device or phone number identification cannot be derived from the 3-legged access token
+                code: DEVICE_NOT_APPLICABLE
+                message: "The service is not available for the provided device"
+            GENERIC_422_UNSUPPORTED_DEVICE_IDENTIFIERS:
+              description: None of the provided device identifiers is supported by the implementation
               value:
                 status: 422
-                code: MISSING_IDENTIFIER
+                code: UNSUPPORTED_DEVICE_IDENTIFIERS
+                message: "Supported device identifiers are: ..."
+            GENERIC_422_UNIDENTIFIABLE_DEVICE:
+              description: The device identifier is not included in the request and the device information cannot be derived from the 3-legged access token
+              value:
+                status: 422
+                code: UNIDENTIFIABLE_DEVICE
                 message: The device cannot be identified.
-            GENERIC_422_UNSUPPORTED_IDENTIFIER:
-              description: None of the provided identifiers is supported by the implementation
-              value:
-                status: 422
-                code: UNSUPPORTED_IDENTIFIER
-                message: The identifier provided is not supported.
-            GENERIC_422_UNNECESSARY_IDENTIFIER:
-              description: An explicit identifier is provided when a device or phone number has already been identified from the access token
-              value:
-                status: 422
-                code: UNNECESSARY_IDENTIFIER
-                message: The device is already identified by the access token.
-    Generic429:
-      description: Too Many Requests
-      headers:
-        x-correlator:
-          $ref: "#/components/headers/x-correlator"
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 429
-                  code:
-                    enum:
-                      - QUOTA_EXCEEDED
-                      - TOO_MANY_REQUESTS
-          examples:
-            GENERIC_429_QUOTA_EXCEEDED:
-              description: Request is rejected due to exceeding a business quota limit
-              value:
-                status: 429
-                code: QUOTA_EXCEEDED
-                message: Either out of resource quota or reaching rate limiting.
-            GENERIC_429_TOO_MANY_REQUESTS:
-              description: API Server request limit is overpassed
-              value:
-                status: 429
-                code: TOO_MANY_REQUESTS
-                message: Either out of resource quota or reaching rate limiting.
     Generic500:
       description: Internal Server Error
       headers:
@@ -607,56 +547,6 @@ components:
                 status: 500
                 code: INTERNAL
                 message: Unknown server error. Typically a server bug.
-    Generic501:
-      description: Not Implemented
-      headers:
-        x-correlator:
-          $ref: "#/components/headers/x-correlator"
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 501
-                  code:
-                    enum:
-                      - NOT_IMPLEMENTED
-          examples:
-            GENERIC_501_NOT_IMPLEMENTED:
-              description: Service not implemented. The use of this code should be avoided as far as possible to get the objective to reach aligned implementations
-              value:
-                status: 501
-                code: NOT_IMPLEMENTED
-                message: This functionality is not implemented yet.
-    Generic502:
-      description: Bad Gateway
-      headers:
-        x-correlator:
-          $ref: "#/components/headers/x-correlator"
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 502
-                  code:
-                    enum:
-                      - BAD_GATEWAY
-          examples:
-            GENERIC_502_BAD_GATEWAY:
-              description: Internal routing problem in the Server side that blocks to manage the service properly
-              value:
-                status: 502
-                code: BAD_GATEWAY
-                message: An upstream internal service cannot be reached.
     Generic503:
       description: Service Unavailable
       headers:
@@ -665,16 +555,7 @@ components:
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 503
-                  code:
-                    enum:
-                      - UNAVAILABLE
+            $ref: "#/components/schemas/ErrorInfo"
           examples:
             GENERIC_503_UNAVAILABLE:
               description: Service is not available. Temporary situation usually related to maintenance process in the server side
@@ -683,27 +564,27 @@ components:
                 code: UNAVAILABLE
                 message: Service Unavailable.
     Generic504:
-      description: Gateway Timeout
+      description: Request timeout exceeded
       headers:
         x-correlator:
-          $ref: "#/components/headers/x-correlator"
+          $ref: '#/components/headers/x-correlator'
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorInfo"
-              - type: object
-                properties:
-                  status:
-                    enum:
-                      - 504
-                  code:
-                    enum:
-                      - TIMEOUT
-          examples:
-            GENERIC_504_TIMEOUT:
-              description: API Server Timeout
-              value:
-                status: 504
-                code: TIMEOUT
-                message: Request timeout exceeded.
+            $ref: '#/components/schemas/ErrorInfo'
+          example:
+            code: REQUEST_TIMEOUT_EXCEEDED
+            status: 504
+            message: Request timeout exceeded
+  headers:
+    x-correlator:
+      description: Correlation id for the different services
+      schema:
+        type: string
+  parameters:
+    x-correlator:
+      name: x-correlator
+      in: header
+      description: Correlation id for the different services
+      schema:
+        type: string
